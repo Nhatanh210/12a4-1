@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>3D Heart Demo</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #text1, #text2 {
+      position: absolute; width: 100%; text-align: center;
+      font-size: 2em; color: pink; font-family: sans-serif;
+    }
+    #text1 { top: -50px; animation: fall1 2s ease-out forwards; }
+    #text2 { top: -50px; animation: fall2 2s ease-out 0.5s forwards; }
+    @keyframes fall1 { to { top: 50px; } }
+    @keyframes fall2 { to { top: 100px; } }
+  </style>
+</head>
+<body>
+  <!-- Các dòng chữ rơi -->
+  <div id="text1">Anh thích em</div>
+  <div id="text2">Công chúa nhỏ</div>
+
+  <!-- Thư viện Three.js -->
+  <script src="https://unpkg.com/three@0.132.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.132.2/examples/js/controls/DeviceOrientationControls.js"></script>
+  <script>
+    // Khởi tạo scene, camera, renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.z = 30;
+    const renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Tạo vật thể trái tim (Shape + Extrude)
+    const heartShape = new THREE.Shape();
+    heartShape.moveTo( 5, 5 );
+    heartShape.bezierCurveTo( 5, 5, 4, 0, 0, 0 );
+    heartShape.bezierCurveTo( -6, 0, -6, 7, -6, 7 );
+    heartShape.bezierCurveTo( -6, 11, -3, 15.4, 5, 19 );
+    heartShape.bezierCurveTo( 12, 15.4, 16, 11, 16, 7 );
+    heartShape.bezierCurveTo( 16, 7, 16, 0, 10, 0 );
+    heartShape.bezierCurveTo( 7, 0, 5, 5, 5, 5 );
+    const extrudeSettings = { depth: 5, bevelEnabled: true, bevelThickness: 1, bevelSize: 1, bevelSegments: 2 };
+    const geometry = new THREE.ExtrudeGeometry( heartShape, extrudeSettings );
+    const material = new THREE.MeshStandardMaterial({ color: 0xff4081, roughness: 0.5, metalness: 0.1 });
+    const heartMesh = new THREE.Mesh( geometry, material );
+    scene.add( heartMesh );
+
+    // Thêm ánh sáng để thấy rõ mô hình 3D
+    const light = new THREE.PointLight(0xFFFFFF, 0.8);
+    light.position.set(10, 10, 10);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040, 0.5));
+
+    // Cài DeviceOrientationControls cho heartMesh
+    const controls = new THREE.DeviceOrientationControls( heartMesh );
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // Vòng lặp render
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
