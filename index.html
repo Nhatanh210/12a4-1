@@ -1,74 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
   <meta charset="utf-8">
-  <title>3D Heart Demo</title>
+  <title>Hiệu ứng TikTok Neon</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    #text1, #text2 {
-      position: absolute; width: 100%; text-align: center;
-      font-size: 2em; color: pink; font-family: sans-serif;
-    }
-    #text1 { top: -50px; animation: fall1 2s ease-out forwards; }
-    #text2 { top: -50px; animation: fall2 2s ease-out 0.5s forwards; }
-    @keyframes fall1 { to { top: 50px; } }
-    @keyframes fall2 { to { top: 100px; } }
+    body { margin: 0; overflow: hidden; background: black; }
+    canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- Các dòng chữ rơi -->
-  <div id="text1">Anh thích em</div>
-  <div id="text2">Công chúa nhỏ</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/loaders/FontLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/geometries/TextGeometry.js"></script>
 
-  <!-- Thư viện Three.js -->
-  <script src="https://unpkg.com/three@0.132.2/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.132.2/examples/js/controls/DeviceOrientationControls.js"></script>
-  <script>
-    // Khởi tạo scene, camera, renderer
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.z = 30;
-    const renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+<script>
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
-    // Tạo vật thể trái tim (Shape + Extrude)
+  // Ánh sáng phát sáng kiểu neon
+  const light = new THREE.PointLight(0xff69b4, 3, 200);
+  light.position.set(0, 20, 40);
+  scene.add(light);
+
+  // Sao nền
+  const stars = new THREE.BufferGeometry();
+  const starCount = 1500;
+  const positions = [];
+  for (let i = 0; i < starCount; i++) {
+    positions.push((Math.random()-0.5)*400);
+    positions.push((Math.random()-0.5)*400);
+    positions.push((Math.random()-0.5)*400);
+  }
+  stars.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
+  const starMesh = new THREE.Points(stars, starMaterial);
+  scene.add(starMesh);
+
+  let fallingObjects = [];
+
+  // Hàm tạo chữ neon
+  function createText(font, message) {
+    const textGeo = new THREE.TextGeometry(message, {
+      font: font,
+      size: 3,
+      height: 0.5,
+    });
+    const textMat = new THREE.MeshPhongMaterial({
+      color: 0xff69b4,
+      emissive: 0xff1493,
+      emissiveIntensity: 1,
+      shininess: 100
+    });
+    const textMesh = new THREE.Mesh(textGeo, textMat);
+    resetPosition(textMesh);
+    scene.add(textMesh);
+    fallingObjects.push(textMesh);
+  }
+
+  // Hàm tạo tim
+  function createHeart() {
+    const x = 0, y = 0;
     const heartShape = new THREE.Shape();
-    heartShape.moveTo( 5, 5 );
-    heartShape.bezierCurveTo( 5, 5, 4, 0, 0, 0 );
-    heartShape.bezierCurveTo( -6, 0, -6, 7, -6, 7 );
-    heartShape.bezierCurveTo( -6, 11, -3, 15.4, 5, 19 );
-    heartShape.bezierCurveTo( 12, 15.4, 16, 11, 16, 7 );
-    heartShape.bezierCurveTo( 16, 7, 16, 0, 10, 0 );
-    heartShape.bezierCurveTo( 7, 0, 5, 5, 5, 5 );
-    const extrudeSettings = { depth: 5, bevelEnabled: true, bevelThickness: 1, bevelSize: 1, bevelSegments: 2 };
-    const geometry = new THREE.ExtrudeGeometry( heartShape, extrudeSettings );
-    const material = new THREE.MeshStandardMaterial({ color: 0xff4081, roughness: 0.5, metalness: 0.1 });
-    const heartMesh = new THREE.Mesh( geometry, material );
-    scene.add( heartMesh );
+    heartShape.moveTo( x + 5, y + 5 );
+    heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
+    heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7, x - 6, y + 7 );
+    heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
+    heartShape.bezierCurveTo( x + 13, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
+    heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
+    heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
 
-    // Thêm ánh sáng để thấy rõ mô hình 3D
-    const light = new THREE.PointLight(0xFFFFFF, 0.8);
-    light.position.set(10, 10, 10);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040, 0.5));
+    const heartGeometry = new THREE.ShapeGeometry(heartShape);
+    const heartMaterial = new THREE.MeshPhongMaterial({ 
+      color: 0xff1493, 
+      emissive: 0xff69b4, 
+      emissiveIntensity: 1.5 
+    });
+    const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+    heart.scale.set(0.2,0.2,0.2);
+    resetPosition(heart);
+    scene.add(heart);
+    fallingObjects.push(heart);
+  }
 
-    // Cài DeviceOrientationControls cho heartMesh
-    const controls = new THREE.DeviceOrientationControls( heartMesh );
+  // Reset vị trí để rơi từ trên xuống
+  function resetPosition(obj){
+    obj.position.set((Math.random()-0.5)*80, 60 + Math.random()*40, (Math.random()-0.5)*80);
+    obj.rotation.set(0,0,0);
+  }
 
-    window.addEventListener('resize', () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
+  // Load font và tạo nhiều chữ
+  const loader = new THREE.FontLoader();
+  loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+    for (let i=0; i<15; i++) createText(font, "Tạo ảnh đẹp");
+    for (let i=0; i<10; i++) createHeart();
+  });
+
+  camera.position.z = 100;
+
+  // Con quay hồi chuyển
+  window.addEventListener('deviceorientation', function(event) {
+    const beta = event.beta ? event.beta : 0;
+    const gamma = event.gamma ? event.gamma : 0;
+    camera.rotation.x = beta * (Math.PI/180) * 0.2;
+    camera.rotation.y = gamma * (Math.PI/180) * 0.2;
+  });
+
+  // Animation
+  function animate() {
+    requestAnimationFrame(animate);
+    starMesh.rotation.y += 0.0005;
+
+    fallingObjects.forEach(obj=>{
+      obj.position.y -= 0.3; // tốc độ rơi
+      obj.rotation.y += 0.01;
+      if(obj.position.y < -40){
+        resetPosition(obj); // rơi xong loop lại
+      }
     });
 
-    // Vòng lặp render
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-  </script>
+    renderer.render(scene, camera);
+  }
+  animate();
+</script>
 </body>
 </html>
